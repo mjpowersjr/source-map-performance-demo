@@ -45,6 +45,16 @@ async function main() {
     }
 
     console.table(results);
+
+    // generate markdown table
+    const headers = ['image', 'compiler', 'options', 'elapsed_ms'];
+    const markdownTable = [
+        '| ' + headers.join(' | ') + ' |',
+        '| ' + headers.map((it) => '-'.repeat(`${it}`.length)).join(' | ') + ' |',
+        ...results.map((result) => '| ' + headers.map((it) => (result as any)[it]).join(' | ') + ' |')
+    ].join(`\n`)
+
+    console.log(markdownTable);
 }
 
 async function runTest(image: string, compiler: string, options: string, args: string[]): Promise<number> {

@@ -54,6 +54,7 @@ async function main() {
         ...results.map((result) => '| ' + headers.map((it) => (result as any)[it]).join(' | ') + ' |')
     ].join(`\n`)
 
+    console.log(`### Results for ${generatedStackCount} stack traces.`)
     console.log(markdownTable);
 }
 

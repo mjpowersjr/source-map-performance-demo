@@ -20,7 +20,7 @@
     "start:tsc:native": "node --enable-source-maps lib-tsc/index.js",
     "start:tsc:none": "node lib-tsc/index.js",
     "run-tests-locally": "yarn start:tsc:none && yarn start:tsc:native && yarn start:tsc:evanw && yarn start:tsc:cspotcode && yarn start:esbuild:none && yarn start:esbuild:native && yarn start:esbuild:evanw && yarn start:esbuild:cspotcode",
-    "test": "docker run source-map-performance-demo",
+    "test": "docker run --rm source-map-performance-demo",
     "start": "yarn clean && yarn build && yarn test"
   },
   "author": "",

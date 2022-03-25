@@ -32,6 +32,12 @@ for (let i = 0; i < max; i++) {
     // console.log(`generating stack trace ${i+1}...`);
     const err = new Error();
     const { stack } = err;
+    if(i === 0) {
+        const re = /at Object\.<anonymous> \(.*source-map-performance-demo\/index\.ts:33:17/
+        if(!re.test(stack!)) {
+            throw new Error('Stack trace looks wrong');
+        }
+    }
     // schema.validate(err);
 }
 

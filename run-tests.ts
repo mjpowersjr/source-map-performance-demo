@@ -6,6 +6,8 @@ import fs from 'fs';
 const execAsync = util.promisify(exec);
 
 const generatedStackCount = 10_000;
+// const generatedStackCount = 1000;
+// const generatedStackCount = 1;
 
 const nodeVersions = [
     '14.19.1',
@@ -34,13 +36,14 @@ async function main() {
     for (const nodeVersion of nodeVersions) {
         for (const compiler of compilers) {
             for (const options of optionSets) {
-                const elapsed_ms = await runTest(nodeVersion, compiler, options, args);
+                const {elapsed_ms, stackTracesAreCorrect} = await runTest(nodeVersion, compiler, options, args);
                 results.push({
-                    nodeVersion,
+                    node: nodeVersion,
                     compiler,
                     options,
                     generated_stack_count: generatedStackCount,
-                    elapsed_ms
+                    elapsed_ms,
+                    stack_traces_correct: stackTracesAreCorrect
                 });
             }
         }
@@ -49,18 +52,21 @@ async function main() {
     console.table(results);
 
     // generate markdown table
-    const headers = ['image', 'compiler', 'options', 'elapsed_ms'];
+    const headers: Array<keyof typeof results[0]> = ['node', 'compiler', 'options', 'stack_traces_correct', 'elapsed_ms'];
     const markdownTable = [
         '| ' + headers.join(' | ') + ' |',
         '| ' + headers.map((it) => '-'.repeat(`${it}`.length)).join(' | ') + ' |',
-        ...results.map((result) => '| ' + headers.map((it) => (result as any)[it]).join(' | ') + ' |')
+        ...results.map((result) => '| ' + headers.map((it) => {
+            if(it === 'stack_traces_correct') return result[it] === true ? '✅' : result[it] === false ? '❌' : '';
+            return result[it];
+        }).join(' | ') + ' |')
     ].join(`\n`)
 
     console.log(`### Results for ${generatedStackCount} stack traces.`)
     console.log(markdownTable);
 }
 
-async function runTest(nodeVersion: string, compiler: string, options: string, args: string): Promise<number> {
+async function runTest(nodeVersion: string, compiler: string, options: string, args: string) {
 
     const description = `node-${nodeVersion}:${compiler}:${options}`
     console.info(`running test for ${description}...`);
@@ -72,7 +78,14 @@ async function runTest(nodeVersion: string, compiler: string, options: string, a
 
     // Run benchmark with hyperfine
     const hyperfineExportPath = `${description.replace(/[ :@/]/g, '_')}.hyperfine.json`;
-    const cmd = `hyperfine --time-unit millisecond --export-json ${hyperfineExportPath} "node ./lib-${compiler}/index.js ${args}"`;
+    let hyperfineOptions = '';
+    if(options === '--enable-source-maps' && compiler.includes('esbuild')) {
+        // node's built-in sourcemap support is *extremely* slow for some reason.  Tell hyperfine to run it only once.
+        hyperfineOptions = '-w 0 -r 1'
+    }
+    // When sourcemaps are not enabled, skip asserting that the stacktrace looks correct
+    const isUsingSourcemaps = options !== '';
+    const cmd = `hyperfine ${hyperfineOptions} --show-output --time-unit millisecond --export-json ${hyperfineExportPath} "node ./lib-${compiler}/index.js ${args} ${isUsingSourcemaps}"`;
     const { stdout, stderr } = await execAsync(cmd, {
         env: {
             ...process.env,
@@ -80,10 +93,12 @@ async function runTest(nodeVersion: string, compiler: string, options: string, a
         }
     });
     console.log(stdout);
+    const jsReport = JSON.parse(stdout.match(/\n\{[^\n]+?\}\n/)![0]) as {duration: number, stackTracesAreCorrect: boolean};
+    const {stackTracesAreCorrect} = jsReport;
 
     // Read benchmark results
-    const hyperfineResults = JSON.parse(fs.readFileSync(hyperfineExportPath, 'utf8')) as HyperFineResults;
-    interface HyperFineResults {
+    const hyperfineReport = JSON.parse(fs.readFileSync(hyperfineExportPath, 'utf8')) as HyperfineReport;
+    interface HyperfineReport {
         results: Array<{
             command: string;
             mean: number;
@@ -97,8 +112,8 @@ async function runTest(nodeVersion: string, compiler: string, options: string, a
         }>;
     }
 
-    const elapsed = Math.round(hyperfineResults.results[0].mean * 1e3);
-    return elapsed;
+    const elapsed_ms = Math.round(hyperfineReport.results[0].mean * 1e3);
+    return {elapsed_ms, stackTracesAreCorrect};
 }
 
 

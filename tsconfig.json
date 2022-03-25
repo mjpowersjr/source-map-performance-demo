@@ -2,6 +2,7 @@
     "extends": "@tsconfig/node16/tsconfig.json",
     "compilerOptions": {
         "outDir": "lib-tsc",
-        "sourceMap": true
+        "sourceMap": true,
+        "esModuleInterop": true
     }
 }

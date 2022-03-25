@@ -29,14 +29,11 @@ const max = args[0]
 const start = Date.now();
 
 for (let i = 0; i < max; i++) {
-    if (i % 100 === 0) {
-        // console.log(`generating stack trace ${i+1}...`);
-        const err = new Error();
-        const { stack } = err;
-        // schema.validate(err);
-    }
+    // console.log(`generating stack trace ${i+1}...`);
+    const err = new Error();
+    const { stack } = err;
+    // schema.validate(err);
 }
 
 const end = Date.now();
 console.log(end - start);
-

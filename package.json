@@ -6,7 +6,8 @@
   "scripts": {
     "build:esbuild": "yarn esbuild --bundle --outfile=lib-esbuild/index.js --platform=node --sourcemap index.ts",
     "build:tsc": "yarn tsc",
-    "build": "yarn build:esbuild && yarn build:tsc",
+    "build:image": "docker build -t source-map-performance-demo .",
+    "build": "yarn build:esbuild && yarn build:tsc && yarn build:image",
     "clean:esbuild": "yarn rimraf lib-esbuild",
     "clean:tsc": "yarn rimraf lib-tsc",
     "clean": "yarn clean:esbuild && yarn clean:tsc",
@@ -18,7 +19,9 @@
     "start:tsc:evanw": "node -r source-map-support/register lib-tsc/index.js",
     "start:tsc:native": "node --enable-source-maps lib-tsc/index.js",
     "start:tsc:none": "node lib-tsc/index.js",
-    "start": "yarn clean && yarn build && yarn start:tsc:none && yarn start:tsc:native && yarn start:tsc:evanw && yarn start:tsc:cspotcode && yarn start:esbuild:none && yarn start:esbuild:native && yarn start:esbuild:evanw && yarn start:esbuild:cspotcode"
+    "run-tests-locally": "yarn start:tsc:none && yarn start:tsc:native && yarn start:tsc:evanw && yarn start:tsc:cspotcode && yarn start:esbuild:none && yarn start:esbuild:native && yarn start:esbuild:evanw && yarn start:esbuild:cspotcode",
+    "test": "docker run source-map-performance-demo",
+    "start": "yarn clean && yarn build && yarn test"
   },
   "author": "",
   "license": "ISC",
